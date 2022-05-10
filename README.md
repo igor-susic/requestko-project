@@ -91,6 +91,7 @@ DESCRIPTION: OpenAPI schema with more details about possible responses for the r
     - [ ] Check if payload returned from Exponea matches specific structure
     - [ ] ...
 - [ ] better error logging (mainly Exceptions)
+- [ ] Add automatic test stage, linting, static code check etc.
 
 
 Why haven't I added this you may ask, well answer is not enough time and this service will never run in production at least it shouldn't :D 
