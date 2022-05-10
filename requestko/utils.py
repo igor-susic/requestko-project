@@ -6,11 +6,12 @@ from aiohttp import ClientResponse
 SMART_ROUTE = "/api/smart"
 
 
-def extract_timeout_parameter(request: Request) -> int:
+def extract_timeout_parameter(request: Request) -> float:
     parameter_key = 'timeout'
-
     param: int = int(request.query_params[parameter_key])
-    return param
+    timeout: float = param / 1000.0
+
+    return timeout
 
 
 def does_route_matches(request: Request) -> bool:

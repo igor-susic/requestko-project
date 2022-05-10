@@ -3,8 +3,7 @@ import asyncio
 import logging
 
 from asyncio.tasks import Task
-from asyncio.queues import Queue, QueueEmpty
-from typing import List
+from typing import List, Optional
 
 from starlette.status import HTTP_200_OK
 
@@ -22,8 +21,8 @@ class Requestor:
     async def close(self) -> None:
         await self._session.close()
 
-    async def request_work(self) -> dict:
-        tasks: List[Task] = [asyncio.create_task(self._request_endpoint(), name="Initial request")]
+    async def request_work(self, timeout: float) -> dict:
+        tasks: List[Task] = [asyncio.create_task(self._request_endpoint(timeout), name="Initial request")]
 
         await asyncio.sleep(0.3)  # Per specification wait 300ms
 
@@ -33,8 +32,8 @@ class Requestor:
                 return result
 
         logger.debug("Initial request not fast enough, spawning two other tasks")
-        tasks.append(asyncio.create_task(self._request_endpoint(), name="Second request"))
-        tasks.append(asyncio.create_task(self._request_endpoint(), name="Third request"))
+        tasks.append(asyncio.create_task(self._request_endpoint(timeout), name="Second request"))
+        tasks.append(asyncio.create_task(self._request_endpoint(timeout), name="Third request"))
 
         for f in asyncio.as_completed(tasks):
             logger.debug("Going through tasks")
@@ -43,28 +42,23 @@ class Requestor:
             if result is not None:
                 task_to_cancel: Task
                 for task_to_cancel in tasks:
-                    import pdb; pdb.set_trace()
                     if not task_to_cancel.done():
                         logger.debug(f"Will try to cancel task: {task_to_cancel}")
                         task_to_cancel.cancel(msg=f"Already got response. Canceling task: {task_to_cancel.get_name()}")
                     else:
-                        logger.debug(f"Seems task: {task_to_cancel.get_name()} is also done, but it doesent matter")
+                        logger.debug(f"Seems task: {task_to_cancel.get_name()} is also done, but it doesn't matter")
 
                 logger.debug(f"This is result {result}")
                 return result
 
         raise Exception
 
-    async def _request_endpoint(self):
-        #timeout = aiohttp.ClientTimeout(total=0.6)  # Assume something wrong as we have response times
-        import random
+    async def _request_endpoint(self, timeout: float) -> Optional[dict]:
+        timeout = aiohttp.ClientTimeout(total=timeout)
 
-        t = random.randint(0, 10)
-        print(f"this request will sleep for {t}")
-        await asyncio.sleep(t)
         try:
-            logger.debug(f"Satarting one request")
-            async with self._session.get(self._path, allow_redirects=False) as response:
+            logger.debug(f"Starting one request")
+            async with self._session.get(self._path, allow_redirects=False, timeout=timeout) as response:
                 if response.status != HTTP_200_OK:
                     logger.debug(f"Request failed, status code: {response.status}")
                     return None

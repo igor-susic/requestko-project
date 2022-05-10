@@ -8,13 +8,13 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.schemas import SchemaGenerator
 from starlette.middleware import Middleware
-from starlette.status import HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
+from starlette.status import HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR, HTTP_400_BAD_REQUEST
 
 from prometheus_client import CONTENT_TYPE_LATEST, REGISTRY, generate_latest
 
 from requestko.middleware import PrometheusMiddleware, TimeoutMiddleware
 from requestko.requestor import Requestor
-from requestko.utils import SMART_ROUTE
+from requestko.utils import SMART_ROUTE, extract_timeout_parameter
 
 os.environ.setdefault("PYTHONASYNCIODEBUG", "1")
 os.environ.setdefault("PYTHONTRACEMALLOC", "1")
@@ -61,8 +61,16 @@ async def smart_endpoint(request: Request) -> JSONResponse:
             {"detail": "Error define timeout reached", "timeout": 2, "time_spent": 1.9996373653411865}
       500:
         description: Internal server error happened
+      400:
+        description: Bad request, client sent request with either invalid or missing query parameter: timeout
     """
-    response: dict = await requestor.request_work()
+    try:
+        timeout: float = extract_timeout_parameter(request=request)
+    except Exception as e:
+        return JSONResponse({'detail': 'You should send integer as query parameter: ?timeout=100'},
+                            status_code=HTTP_400_BAD_REQUEST)
+
+    response: dict = await requestor.request_work(timeout=timeout)
     return JSONResponse(content=response)
 
 
