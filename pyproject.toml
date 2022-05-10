@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "exponea-task"
+version = "0.1.0"
+description = "This simple server forards request to Exponea test server"
+authors = ["Igor Susic <igorsusic254@gmail.com>"]
+
+packages = [
+    {include = "requestko"},
+]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+starlette = "^0.20.0"
+uvicorn = {extras = ["standard"], version = "^0.17.6"}
+prometheus-client = "^0.13.1"
+aiohttp = "^3.8.1"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
