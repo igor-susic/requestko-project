@@ -42,16 +42,13 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
 
             try:
                 with REQUESTS_PROCESSING_TIME.time():
-                    response = await call_next(request)
-                return response
+                    return await call_next(request)
             except Exception as e:
                 FAILED_REQUESTS.labels(exception_type=type(e)).inc()
-                raise HTTPException(500, str(e))
             finally:
                 REQUESTS_IN_PROGRESS.dec()
         else:
-            response = await call_next(request)
-            return response
+            return await call_next(request)
 
 
 class TimeoutMiddleware(BaseHTTPMiddleware):
@@ -67,5 +64,5 @@ class TimeoutMiddleware(BaseHTTPMiddleware):
         except asyncio.TimeoutError:
             spent = time.time() - start_time
             return JSONResponse(
-                {'detail': 'Error define timeout reached', 'timeout': timeout, 'time_spent': spent},
+                {'detail': 'Error defined timeout reached', 'timeout': timeout, 'time_spent': spent},
                 status_code=HTTP_504_GATEWAY_TIMEOUT)

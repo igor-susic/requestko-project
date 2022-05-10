@@ -3,7 +3,7 @@ from starlette.responses import JSONResponse
 
 from aiohttp import ClientResponse
 
-from requestko.app import SMART_ROUTE
+SMART_ROUTE = "/api/smart"
 
 
 def extract_timeout_parameter(request: Request) -> int:

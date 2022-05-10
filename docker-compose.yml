@@ -1,0 +1,50 @@
+version: '3.8'
+
+networks:
+  requestko-test:
+    driver: bridge
+
+volumes:
+  prometheus_data: { }
+
+services:
+  requestko:
+    build:
+      context: .
+      target: "prod-stage"
+    ports:
+    - 0.0.0.0:80:80
+    networks:
+      - requestko-test
+    restart: on-failure
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    expose:
+      - 9090
+    networks:
+      - requestko-test
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: always
+
+  grafana:
+    image: grafana/grafana-oss
+    user: "472"
+    depends_on:
+      - prometheus
+    ports:
+      - 3000:3000
+    networks:
+      - requestko-test
+    restart: always

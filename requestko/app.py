@@ -7,18 +7,21 @@ from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.schemas import SchemaGenerator
+from starlette.middleware import Middleware
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_500_INTERNAL_SERVER_ERROR
 
 from prometheus_client import CONTENT_TYPE_LATEST, REGISTRY, generate_latest
 
-from requestko.middleware import PrometheusMiddleware
+from requestko.middleware import PrometheusMiddleware, TimeoutMiddleware
 from requestko.requestor import Requestor
+from requestko.utils import SMART_ROUTE
 
 os.environ.setdefault("PYTHONASYNCIODEBUG", "1")
+os.environ.setdefault("PYTHONTRACEMALLOC", "1")
 
-app = Starlette(debug=True)
-app.add_middleware(middleware_class=PrometheusMiddleware)
+middleware = [Middleware(PrometheusMiddleware), Middleware(TimeoutMiddleware)]
 
+app = Starlette(debug=True, middleware=middleware)
 
 logger = logging.getLogger("requestko.app")
 logger.setLevel(logging.DEBUG)
@@ -27,7 +30,6 @@ schemas = SchemaGenerator(
     {"openapi": "3.0.0", "info": {"title": "API documentation for this simple server", "version": "0.1"}}
 )
 
-SMART_ROUTE = "/api/smart"
 requestor: Requestor
 
 
@@ -38,14 +40,27 @@ def startup():
     requestor = Requestor()
 
 
+@app.on_event("shutdown")
+def shutdown():
+    global requestor
+    logger.info("Application is shutting down")
+    requestor.close()
+
+
 @app.route(path=SMART_ROUTE, methods=["GET"])
 async def smart_endpoint(request: Request) -> JSONResponse:
     """
     responses:
       200:
-        description: A list of users.
+        description: Forwards info from Exponea server.
         examples:
-          [{"username": "tom"}, {"username": "lucy"}]
+          {"time": "124"}
+      504:
+        description: Terminates if timeout is reached
+        examples:
+            {"detail": "Error define timeout reached", "timeout": 2, "time_spent": 1.9996373653411865}
+      500:
+        description: Internal server error happened
     """
     response: dict = await requestor.request_work()
     return JSONResponse(content=response)
@@ -69,4 +84,3 @@ async def not_found(request: Request, exc: Exception) -> Response:
 @app.exception_handler(HTTP_500_INTERNAL_SERVER_ERROR)
 async def internal_server_error(request: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(content={'Message': 'Internal server error'}, status_code=HTTP_500_INTERNAL_SERVER_ERROR)
-
