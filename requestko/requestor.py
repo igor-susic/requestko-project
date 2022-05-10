@@ -13,6 +13,10 @@ logger = logging.getLogger("requestko.requestor")
 
 
 class Requestor:
+    """
+    Requestor is here to enable us to use one session for the whole lifecycle of this app,
+    and to decouple this code from controllers
+    """
 
     def __init__(self):
         self._session = aiohttp.ClientSession(base_url="https://exponea-engineering-assignment.appspot.com")
@@ -22,6 +26,10 @@ class Requestor:
         await self._session.close()
 
     async def request_work(self, timeout: float) -> dict:
+        """
+        Schedules tasks as defined per documentation so that we either receive successful response
+        or get an error.
+        """
         tasks: List[Task] = [asyncio.create_task(self._request_endpoint(timeout), name="Initial request")]
 
         await asyncio.sleep(0.3)  # Per specification wait 300ms
@@ -51,6 +59,7 @@ class Requestor:
                 logger.debug(f"This is result {result}")
                 return result
 
+        logger.debug("WIll rise exception this time ...")
         raise Exception
 
     async def _request_endpoint(self, timeout: float) -> Optional[dict]:

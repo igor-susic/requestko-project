@@ -11,7 +11,6 @@ from prometheus_client import Histogram, Counter, Gauge
 from requestko.utils import does_route_matches, extract_timeout_parameter
 
 logger = logging.getLogger("requestko.middleware")
-logger.setLevel(logging.DEBUG)
 
 TOTAL_REQUESTS = Counter(
     "custom_requests_total", "Total count of requests"

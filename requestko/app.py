@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import logging
 
 from starlette.applications import Starlette
@@ -16,15 +15,11 @@ from requestko.middleware import PrometheusMiddleware, TimeoutMiddleware
 from requestko.requestor import Requestor
 from requestko.utils import SMART_ROUTE, extract_timeout_parameter
 
-os.environ.setdefault("PYTHONASYNCIODEBUG", "1")
-os.environ.setdefault("PYTHONTRACEMALLOC", "1")
-
 middleware = [Middleware(PrometheusMiddleware), Middleware(TimeoutMiddleware)]
 
 app = Starlette(debug=True, middleware=middleware)
 
 logger = logging.getLogger("requestko.app")
-logger.setLevel(logging.DEBUG)
 
 schemas = SchemaGenerator(
     {"openapi": "3.0.0", "info": {"title": "API documentation for this simple server", "version": "0.1"}}
