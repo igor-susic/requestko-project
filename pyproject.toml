@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "exponea-task"
+name = "requestko-project"
 version = "0.1.0"
 description = "This simple server forards request to Exponea test server"
 authors = ["Igor Susic <igorsusic254@gmail.com>"]
